@@ -5,12 +5,11 @@ from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 
 class GlacierDataset(Dataset):
-    def __init__(self, base_path: str, band_folders: list = None, transform=None, normalize=False):
+    def __init__(self, base_path: str, band_folders: list = None, transform=None):
         self.base_path = base_path
         self.band_folders = band_folders if band_folders else os.listdir(base_path)[:-1]
         self.labels_folder = os.listdir(base_path)[-1]
         self.transform = transform
-        self.normalize = normalize  # <<=== New parameter da
 
         # Extract image IDs from the first band folder
         self.image_ids = [fname.split("_")[-2] + "_" + fname.split("_")[-1].split(".")[0]
@@ -31,19 +30,12 @@ class GlacierDataset(Dataset):
             bands.append(img)
         bands = np.stack(bands, axis=0).astype(np.float32)
 
-        # Normalize if required
-        if self.normalize:
-            bands = bands / 65535.0
 
         # Read label using OpenCV
         label_dir = os.path.join(self.base_path, self.labels_folder)
         label_file = [f for f in os.listdir(label_dir) if image_id in f][0]
         label_path = os.path.join(label_dir, label_file)
         label = cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
-
-        # Keep original labels for now (0–255)
-        # You can binarize later if needed
-        label = label.astype(np.float32)
 
         # Apply transform if given (e.g., augmentations)
         if self.transform:
@@ -57,7 +49,7 @@ if __name__ == "__main__":
     band_folders = os.listdir(base_path)[:-1]
 
     # Toggle normalize on/off here
-    dataset = GlacierDataset(base_path=base_path, band_folders=band_folders, normalize=False)
+    dataset = GlacierDataset(base_path=base_path, band_folders=band_folders)
 
     # Test one sample
     bands, label = dataset[0]
@@ -66,36 +58,21 @@ if __name__ == "__main__":
     print("Bands max:", bands.max())
     print("Label unique:", np.unique(label))
 
-    # Load dataset with and without normalization
-    dataset_raw = GlacierDataset(base_path=base_path, band_folders=band_folders, normalize=False)
-    dataset_norm = GlacierDataset(base_path=base_path, band_folders=band_folders, normalize=True)
-
-    # Get same sample
-    bands_raw, label_raw = dataset_raw[0]
-    bands_norm, label_norm = dataset_norm[0]
 
     # Plot comparison for first 3 bands
     plt.figure(figsize=(15, 6))
     for i in range(5):
         # Raw band
-        plt.subplot(2, 6, i + 1)
-        plt.imshow(bands_raw[i], cmap='gray')
-        plt.title(f"Raw Band {i + 1}\nMax: {bands_raw[i].max():.0f}")
+        plt.subplot(1, 6, i + 1)
+        plt.imshow(bands[i], cmap='gray')
+        plt.title(f"Raw Band {i + 1}\nMax: {bands[i].max():.0f}")
         plt.axis('off')
 
-        # Normalized band
-        plt.subplot(2, 6, i + 7)
-        plt.imshow(bands_norm[i], cmap='gray')
-        plt.title(f"Norm Band {i + 1}\nMax: {bands_norm[i].max():.2f}")
-        plt.axis('off')
-    plt.subplot(2, 6, 6)
-    plt.imshow(label_raw, cmap='grey')
-    plt.title(f"Raw Label \n{label_raw.max()}")
+    plt.subplot(1, 6, 6)
+    plt.imshow(label, cmap='grey')
+    plt.title(f"Raw Label \n{label.max()}")
 
-    plt.subplot(2, 6, 12)
-    plt.imshow(label_norm, cmap='grey')
-    plt.title(f"Raw Label \n{label_norm.max()}")
-
-    plt.suptitle("Raw vs Normalized Bands", fontsize=16)
     plt.tight_layout()
     plt.show()
+
+
