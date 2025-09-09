@@ -4,7 +4,6 @@ import cv2
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 
-
 class GlacierDataset(Dataset):
     def __init__(self, base_path: str, band_folders: list = None, transform=None, normalize=False):
         self.base_path = base_path
