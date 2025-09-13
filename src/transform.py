@@ -10,7 +10,7 @@ class GlacierAugment:
 
     def __call__(self, bands, label):
         bands = bands / 65535.0
-        label = label.astype(np.float32)
+        label = label.astype(np.float32) / 255.0
 
         if random.random() < self.flip_prob:
             bands = np.flip(bands, axis=2)  #flip width
