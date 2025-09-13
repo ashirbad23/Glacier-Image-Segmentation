@@ -4,6 +4,7 @@ import cv2
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 
+
 class GlacierDataset(Dataset):
     def __init__(self, base_path: str, band_folders: list = None, transform=None):
         self.base_path = base_path
@@ -29,7 +30,6 @@ class GlacierDataset(Dataset):
             img = cv2.imread(band_path, cv2.IMREAD_UNCHANGED)  # 16-bit unchanged
             bands.append(img)
         bands = np.stack(bands, axis=0).astype(np.float32)
-
 
         # Read label using OpenCV
         label_dir = os.path.join(self.base_path, self.labels_folder)
@@ -58,7 +58,6 @@ if __name__ == "__main__":
     print("Bands max:", bands.max())
     print("Label unique:", np.unique(label))
 
-
     # Plot comparison for first 3 bands
     plt.figure(figsize=(15, 6))
     for i in range(5):
@@ -74,5 +73,3 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.show()
-
-
