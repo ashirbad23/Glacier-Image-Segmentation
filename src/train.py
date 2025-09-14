@@ -12,10 +12,11 @@ from tqdm import tqdm
 import pickle
 
 # Hyperparameters
-EPOCHS = 1
+EPOCHS = 60
 BATCH_SIZE = 2
 LR = 1e-3
-KFOLDS = 2
+KFOLDS = 5
+PATIENCE = 7
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BASE_PATH = "../data/Train"
 
@@ -79,14 +80,19 @@ def main():
         model = U_Net(in_channels=5, out_channels=1).to(DEVICE)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=LR)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 
         best_mcc = -1
+        patience_counter = 0
+
         train_losses, val_losses = [], []
         train_mccs, val_mccs = [], []
 
         for epoch in range(EPOCHS):
             train_loss = train_one_loop(model, train_loader, optimizer, criterion, DEVICE)
             val_loss, val_mcc = validate(model, val_loader, criterion, DEVICE)
+
+            scheduler.step(val_loss)
 
             print(f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | MCC: {val_mcc:.4f}")
 
@@ -96,7 +102,12 @@ def main():
 
             if val_mcc > best_mcc:
                 best_mcc = val_mcc
-                torch.save(model.state_dict(), f"../weights/best_model_fold{fold}.pth")
+                torch.save(model.state_dict(), f"../weights/best_model_fold{fold}_{val_mcc}.pth")
+            else:
+                patience_counter += 1
+
+            if patience_counter >= PATIENCE:
+                print(f"===== Early stopping at epoch: {epoch} =====")
 
         with open(f"../outputs/metrics_fold{fold}.pkl", "wb") as f:
             pickle.dump({
