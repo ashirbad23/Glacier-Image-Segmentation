@@ -96,7 +96,7 @@ def main():
 
             scheduler.step(val_loss)
 
-            print(f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | MCC: {val_mcc:.4f}")
+            print(f"Epoch: {epoch+1} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | MCC: {val_mcc:.4f}")
 
             train_losses.append(train_loss)
             val_losses.append(val_loss)
