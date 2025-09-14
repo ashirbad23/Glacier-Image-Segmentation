@@ -58,6 +58,7 @@ def validate(model, loader, criterion, device):
             bands, labels = bands.to(device), labels.to(device)
             labels = labels.unsqueeze(1)
             outputs = model(bands)
+
             loss = criterion(outputs, labels)
             total_loss += loss.item()
             total_mcc += mcc_score(labels, outputs)
@@ -78,7 +79,7 @@ def main():
         val_loader = DataLoader(val_subset, batch_size=BATCH_SIZE)
 
         model = U_Net(in_channels=5, out_channels=1).to(DEVICE)
-        criterion = nn.BCEWithLogitsLoss()
+        criterion = nn.BCELoss()
         optimizer = optim.Adam(model.parameters(), lr=LR)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 

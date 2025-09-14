@@ -31,14 +31,18 @@ class U_Net(nn.Module):
 
         self.upconv4 = nn.ConvTranspose2d(bands[3] * 2, bands[3], kernel_size=2, stride=2)
         self.dec4 = DoubleConv(bands[3] * 2, bands[3])
+
         self.upconv3 = nn.ConvTranspose2d(bands[3], bands[2], kernel_size=2, stride=2)
-        self.dec3 = DoubleConv(bands[3], bands[2])
+        self.dec3 = DoubleConv(bands[2] * 2, bands[2])  # FIXED
+
         self.upconv2 = nn.ConvTranspose2d(bands[2], bands[1], kernel_size=2, stride=2)
-        self.dec2 = DoubleConv(bands[2], bands[1])
+        self.dec2 = DoubleConv(bands[1] * 2, bands[1])  # FIXED
+
         self.upconv1 = nn.ConvTranspose2d(bands[1], bands[0], kernel_size=2, stride=2)
-        self.dec1 = DoubleConv(bands[1], bands[0])
+        self.dec1 = DoubleConv(bands[0] * 2, bands[0])  # FIXED
 
         self.final_conv = nn.Conv2d(bands[0], out_channels, kernel_size=1)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         e1 = self.enc1(x)
@@ -57,7 +61,7 @@ class U_Net(nn.Module):
         d1 = self.upconv1(d2)
         d1 = self.dec1(torch.cat([d1, e1], dim=1))
 
-        return self.final_conv(d1)
+        return self.sigmoid(self.final_conv(d1))
 
 
 if __name__ == "__main__":
