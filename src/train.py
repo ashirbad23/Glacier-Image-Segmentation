@@ -85,6 +85,7 @@ def main():
 
         best_mcc = -1
         patience_counter = 0
+        best_model_path = None
 
         train_losses, val_losses = [], []
         train_mccs, val_mccs = [], []
@@ -103,12 +104,23 @@ def main():
 
             if val_mcc > best_mcc:
                 best_mcc = val_mcc
-                torch.save(model.state_dict(), f"../weights/best_model_fold{fold}_{val_mcc}.pth")
+
+                # Remove previous saved model
+                if best_model_path is not None:
+                    import os
+                    if os.path.exists(best_model_path):
+                        os.remove(best_model_path)
+
+                # Save new best model
+                best_model_path = f"../weights/best_model_fold{fold}_{val_mcc:.4f}.pth"
+                torch.save(model.state_dict(), best_model_path)
+                patience_counter = 0
             else:
                 patience_counter += 1
 
             if patience_counter >= PATIENCE:
                 print(f"===== Early stopping at epoch: {epoch} =====")
+                break
 
         with open(f"../outputs/metrics_fold{fold}.pkl", "wb") as f:
             pickle.dump({
