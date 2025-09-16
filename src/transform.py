@@ -1,15 +1,20 @@
 import torch
 import numpy as np
 import random
+from scipy.ndimage import rotate
 
 
 class GlacierAugment:
-    def __init__(self, flip_prob=0.5, rotate_prob=0.5):
+    def __init__(self, flip_prob=0.5, rotate_prob=0.5, max_angle=45):
         self.flip_prob = flip_prob
         self.rotate_prob = rotate_prob
+        self.max_angle = max_angle
 
     def __call__(self, bands, label):
-        bands = bands / 65535.0
+        bands = bands.astype(np.float32)
+        for i in range(bands.shape[0]):
+            band = bands[i]
+            bands[i] = (band - band.min()) / (band.max() - band.min() + 1e-6)
         label = label.astype(np.float32) / 255.0
 
         if random.random() < self.flip_prob:
@@ -21,9 +26,12 @@ class GlacierAugment:
             label = np.flip(label, axis=0)
 
         if random.random() < self.rotate_prob:
-            k = random.choice([1, 2, 3])
-            bands = np.rot90(bands, k, axes=(1, 2))
-            label = np.rot90(label, k)
+            angle = random.uniform(-self.max_angle, self.max_angle)
+            bands_rot = np.zeros_like(bands)
+            for i in range(bands.shape[0]):
+                bands_rot[i] = rotate(bands[i], angle, reshape=False, order=1, mode='reflect')
+            label = rotate(label, angle, reshape=False, order=0, mode='reflect')
+            bands = bands_rot
 
         bands = bands.copy()
         label = label.copy()

@@ -6,3 +6,5 @@ __pycache__/
 
 *.pth
 *.pkl
+monitor.py
+/solution

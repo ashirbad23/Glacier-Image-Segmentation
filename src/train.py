@@ -10,9 +10,19 @@ from transform import GlacierAugment
 from model import U_Net
 from tqdm import tqdm
 import pickle
+import os
+
+os.makedirs("../weights", exist_ok=True)
+os.makedirs("../outputs", exist_ok=True)
+
+seed = 42
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+np.random.seed(seed)
 
 # Hyperparameters
-EPOCHS = 60
+EPOCHS = 100
 BATCH_SIZE = 2
 LR = 1e-3
 KFOLDS = 5
@@ -25,6 +35,7 @@ BASE_PATH = "../data/Train"
 def mcc_score(y_ture, y_pred):
     y_true = y_ture.cpu().numpy().flatten()
     y_pred = (y_pred.cpu().numpy().flatten() > 0.5).astype(np.int32)
+
     return matthews_corrcoef(y_true, y_pred)
 
 
@@ -89,14 +100,13 @@ def main():
 
         train_losses, val_losses = [], []
         train_mccs, val_mccs = [], []
-
         for epoch in range(EPOCHS):
             train_loss = train_one_loop(model, train_loader, optimizer, criterion, DEVICE)
             val_loss, val_mcc = validate(model, val_loader, criterion, DEVICE)
 
             scheduler.step(val_loss)
 
-            print(f"Epoch: {epoch+1} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | MCC: {val_mcc:.4f}")
+            print(f"Epoch {epoch+1} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | MCC: {val_mcc:.4f}")
 
             train_losses.append(train_loss)
             val_losses.append(val_loss)
@@ -107,7 +117,6 @@ def main():
 
                 # Remove previous saved model
                 if best_model_path is not None:
-                    import os
                     if os.path.exists(best_model_path):
                         os.remove(best_model_path)
 
@@ -118,9 +127,9 @@ def main():
             else:
                 patience_counter += 1
 
-            if patience_counter >= PATIENCE:
-                print(f"===== Early stopping at epoch: {epoch} =====")
-                break
+            # if patience_counter >= PATIENCE:
+            #     print(f"===== Early stopping at epoch: {epoch} =====")
+            #     break
 
         with open(f"../outputs/metrics_fold{fold}.pkl", "wb") as f:
             pickle.dump({
@@ -129,6 +138,10 @@ def main():
                 "val_mcc": val_mccs
             }, f)
 
+    torch.cuda.empty_cache()
+    del model, optimizer, criterion, train_loader, val_loader
+
 
 if __name__ == "__main__":
     main()
+
