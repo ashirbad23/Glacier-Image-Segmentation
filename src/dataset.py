@@ -8,12 +8,11 @@ from transform import GlacierAugment
 
 
 class GlacierDataset(Dataset):
-    def __init__(self, base_path: str, patch_size=256, for_ann=False):
+    def __init__(self, base_path: str, patch_size=256):
         self.base_path = base_path
         self.band_folders = os.listdir(base_path)[:-1]
         self.labels_folder = os.listdir(base_path)[-1]
         self.patch_size = patch_size
-        self.for_ann = for_ann
         self.transform = GlacierAugment()
 
         # Extract image IDs from the first band folder
@@ -36,6 +35,22 @@ class GlacierDataset(Dataset):
 
             for y in range(0, H, self.patch_size):
                 for x in range(0, W, self.patch_size):
+                    label_dir = os.path.join(self.base_path, self.labels_folder)
+                    label_file = [f for f in os.listdir(label_dir) if img_id in f][0]
+                    label_path = os.path.join(label_dir, label_file)
+                    label_patch = cv2.imread(label_path, cv2.IMREAD_UNCHANGED)[y:y+self.patch_size, x:x+self.patch_size]
+
+                    band_sum = 0
+                    for folder in self.band_folders:
+                        band_dir = os.path.join(self.base_path, folder)
+                        band_file = [f for f in os.listdir(band_dir) if img_id in f][0]
+                        band_path = os.path.join(band_dir, band_file)
+                        band_img = cv2.imread(band_path, cv2.IMREAD_UNCHANGED)
+                        band_sum += band_img[y:y+self.patch_size, x:x+self.patch_size].sum()
+
+                    if band_sum == 0 and label_patch.sum() == 0:
+                        continue
+
                     for t_id in self.transform.transform_list:
                         samples.append((img_id, x, y, self.patch_size, self.patch_size, t_id))
 
@@ -131,7 +146,7 @@ if __name__ == "__main__":
     band_folders = os.listdir(base_path)[:-1]
 
     # Toggle normalize on/off here
-    dataset = GlacierDataset(base_path=base_path)
+    dataset = GlacierDataset(base_path=base_path, patch_size=128)
 
     # Test one sample
     bands, label = dataset[880]
