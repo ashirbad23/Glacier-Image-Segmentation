@@ -157,9 +157,9 @@ def main():
                         os.remove(best_model_path_per_thresh[t])
 
                     # Save model for this threshold
-                    best_model_path_per_thresh[t] = f"../weights/fold{fold + 1}_th{t:.2f}_mcc{np.round(val_mcc[i], 4)}.pth"
+                    best_model_path_per_thresh[t] = f"../weights/fold{fold + 1}_th{t:.2f}_mcc{np.round(val_mcc, 4)}.pth"
                     torch.save(model.state_dict(), best_model_path_per_thresh[t])
-                    print(f"✅ New best model saved for fold {fold + 1}, threshold {t:.2f}, MCC {np.round(val_mcc[i], 4)}")
+                    print(f"✅ New best model saved for fold {fold + 1}, threshold {t:.2f}, MCC {np.round(val_mcc, 4)}")
                     improved = True
 
             if improved:
