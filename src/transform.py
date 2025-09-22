@@ -1,39 +1,38 @@
-import torch
 import numpy as np
-import random
 from scipy.ndimage import rotate
 
 
 class GlacierAugment:
-    def __init__(self, flip_prob=0.5, rotate_prob=0.5, max_angle=45):
-        self.flip_prob = flip_prob
-        self.rotate_prob = rotate_prob
-        self.max_angle = max_angle
+    def __init__(self):
+        # Fixed transform IDs:
+        # 0: original, 1: rot90, 2: rot180, 3: rot270, 4: hflip, 5: vflip,
+        # 6: rot45, 7: rot135, 8: rot225, 9: rot315
+        self.transform_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    def __call__(self, bands, label):
-        bands = bands.astype(np.float32)
-        for i in range(bands.shape[0]):
-            band = bands[i]
-            bands[i] = (band - band.min()) / (band.max() - band.min() + 1e-6)
-        label = label.astype(np.float32) / 255.0
-
-        if random.random() < self.flip_prob:
-            bands = np.flip(bands, axis=2)  #flip width
+    def apply(self, bands, label, transform_id):
+        if transform_id == 1:  # rot90
+            bands = np.rot90(bands, k=1, axes=(1, 2))
+            label = np.rot90(label, k=1)
+        elif transform_id == 2:  # rot180
+            bands = np.rot90(bands, k=2, axes=(1, 2))
+            label = np.rot90(label, k=2)
+        elif transform_id == 3:  # rot270
+            bands = np.rot90(bands, k=3, axes=(1, 2))
+            label = np.rot90(label, k=3)
+        elif transform_id == 4:  # hflip
+            bands = np.flip(bands, axis=2)
             label = np.flip(label, axis=1)
-
-        if random.random() < self.flip_prob:
-            bands = np.flip(bands, axis=1)  #flip height
+        elif transform_id == 5:  # vflip
+            bands = np.flip(bands, axis=1)
             label = np.flip(label, axis=0)
+        elif transform_id in [6, 7, 8, 9]:  # 45°, 135°, 225°, 315°
+            angle_map = {6: 45, 7: 135, 8: 225, 9: 315}
+            angle = angle_map[transform_id]
 
-        if random.random() < self.rotate_prob:
-            angle = random.uniform(-self.max_angle, self.max_angle)
             bands_rot = np.zeros_like(bands)
             for i in range(bands.shape[0]):
                 bands_rot[i] = rotate(bands[i], angle, reshape=False, order=1, mode='reflect')
             label = rotate(label, angle, reshape=False, order=0, mode='reflect')
             bands = bands_rot
 
-        bands = bands.copy()
-        label = label.copy()
-
-        return torch.tensor(bands, dtype=torch.float32), torch.tensor(label, dtype=torch.float32)
+        return bands.copy(), label.copy()

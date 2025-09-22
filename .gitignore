@@ -2,6 +2,10 @@
 *.txt
 
 /.idea
+/weights
+/outputs
+/weights_ann
+/outputs_ann
 __pycache__/
 
 *.pth
