@@ -10,5 +10,6 @@ __pycache__/
 
 *.pth
 *.pkl
-monitor.py
+src/monitor.py
+src/visuals.py
 /solution
