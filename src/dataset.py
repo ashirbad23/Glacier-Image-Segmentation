@@ -26,33 +26,57 @@ class GlacierDataset(Dataset):
 
     def _generate_samples(self):
         samples = []
+        random_patches_per_image = 5  # you can increase if you want more random patches
+
         for img_id in self.image_ids:
-            band_dir = os.path.join(self.base_path, self.band_folders[0])
-            band_file = [f for f in os.listdir(band_dir) if img_id in f][0]
-            band_path = os.path.join(band_dir, band_file)
-            band = cv2.imread(band_path, cv2.IMREAD_UNCHANGED)  # 16-bit unchanged
-            H, W = band.shape
+            # --- Load all bands & label once ---
+            bands_list = []
+            for folder in self.band_folders:
+                band_path = os.path.join(self.base_path, folder,
+                                         [f for f in os.listdir(os.path.join(self.base_path, folder)) if img_id in f][
+                                             0])
+                band_img = cv2.imread(band_path, cv2.IMREAD_UNCHANGED)
+                bands_list.append(band_img)
+            bands_stack = np.stack(bands_list, axis=0)  # shape: [bands, H, W]
 
-            for y in range(0, H, self.patch_size):
-                for x in range(0, W, self.patch_size):
-                    label_dir = os.path.join(self.base_path, self.labels_folder)
-                    label_file = [f for f in os.listdir(label_dir) if img_id in f][0]
-                    label_path = os.path.join(label_dir, label_file)
-                    label_patch = cv2.imread(label_path, cv2.IMREAD_UNCHANGED)[y:y+self.patch_size, x:x+self.patch_size]
+            label_path = os.path.join(self.base_path, self.labels_folder,
+                                      [f for f in os.listdir(os.path.join(self.base_path, self.labels_folder)) if
+                                       img_id in f][0])
+            label_img = cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
 
-                    band_sum = 0
-                    for folder in self.band_folders:
-                        band_dir = os.path.join(self.base_path, folder)
-                        band_file = [f for f in os.listdir(band_dir) if img_id in f][0]
-                        band_path = os.path.join(band_dir, band_file)
-                        band_img = cv2.imread(band_path, cv2.IMREAD_UNCHANGED)
-                        band_sum += band_img[y:y+self.patch_size, x:x+self.patch_size].sum()
+            H, W = label_img.shape
 
-                    if band_sum == 0 and label_patch.sum() == 0:
-                        continue
+            # --- 1. Generate 16-grid patches with 50% overlap ---
+            stride = self.patch_size // 2
+            for y in range(0, H - self.patch_size + 1, stride):
+                for x in range(0, W - self.patch_size + 1, stride):
+                    patch_label = label_img[y:y + self.patch_size, x:x + self.patch_size]
+                    patch_bands = bands_stack[:, y:y + self.patch_size, x:x + self.patch_size]
+
+                    if patch_bands.sum() == 0 and patch_label.sum() == 0:
+                        continue  # skip empty patches
 
                     for t_id in self.transform.transform_list:
-                        samples.append((img_id, x, y, self.patch_size, self.patch_size, t_id))
+                        aug_bands, aug_label = self.transform.apply(patch_bands, patch_label, t_id)
+                        if aug_bands.sum() > 0 or aug_label.sum() > 0:
+                            samples.append((img_id, x, y, self.patch_size, self.patch_size, t_id))
+
+            # --- 2. Add random non-zero patches ---
+            non_zero_coords = np.argwhere(label_img > 0)  # where glacier pixels exist
+            for _ in range(random_patches_per_image):
+                if len(non_zero_coords) == 0:
+                    break
+                cy, cx = non_zero_coords[np.random.randint(0, len(non_zero_coords))]
+                y = max(0, min(cy - self.patch_size // 2, H - self.patch_size))
+                x = max(0, min(cx - self.patch_size // 2, W - self.patch_size))
+
+                patch_label = label_img[y:y + self.patch_size, x:x + self.patch_size]
+                patch_bands = bands_stack[:, y:y + self.patch_size, x:x + self.patch_size]
+                if patch_bands.sum() > 0 and patch_label.sum() > 0:
+                    for t_id in self.transform.transform_list:
+                        aug_bands, aug_label = self.transform.apply(patch_bands, patch_label, t_id)
+                        if aug_bands.sum() > 0 or aug_label.sum() > 0:
+                            samples.append((img_id, x, y, self.patch_size, self.patch_size, t_id))
 
         return samples
 
@@ -149,7 +173,7 @@ if __name__ == "__main__":
     dataset = GlacierDataset(base_path=base_path, patch_size=128)
 
     # Test one sample
-    bands, label = dataset[1000]
+    bands, label = dataset[155]
     bands, label = bands.numpy(), label.numpy()
     print("Bands shape:", bands.shape)  # [5, H, W]
     print("Label shape:", label.shape)  # [H, W]
@@ -172,3 +196,11 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.show()
+
+    # zero_count = 0
+    #
+    # for bands, labels in dataset:
+    #     if bands.sum() == 0 and labels.sum() == 0:
+    #         zero_count += 1
+    #
+    # print(zero_count)

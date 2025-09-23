@@ -101,7 +101,7 @@ def validate(model, loader, criterion, device, thresholds):
 # Main Training
 # =====================
 def main():
-    dataset = GlacierDataset(base_path=BASE_PATH)
+    dataset = GlacierDataset(base_path=BASE_PATH, patch_size=128)
     kfold = KFold(n_splits=KFOLDS, shuffle=True, random_state=42)
 
     thresholds = [0.3, 0.4, 0.5, 0.6]
