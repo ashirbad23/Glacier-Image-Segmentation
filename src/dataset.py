@@ -149,7 +149,7 @@ if __name__ == "__main__":
     dataset = GlacierDataset(base_path=base_path, patch_size=128)
 
     # Test one sample
-    bands, label = dataset[880]
+    bands, label = dataset[1000]
     bands, label = bands.numpy(), label.numpy()
     print("Bands shape:", bands.shape)  # [5, H, W]
     print("Label shape:", label.shape)  # [H, W]

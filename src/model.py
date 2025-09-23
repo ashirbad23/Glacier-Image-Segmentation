@@ -74,10 +74,11 @@ class ConvBlock(nn.Module):
         self.double_conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            nn.GELU(),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            nn.GELU(),
+            nn.Dropout2d(0.1)
         )
 
     def forward(self, x):
@@ -201,11 +202,11 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    model = SpectralPixelNet(in_channels=5, out_channels=1)
+    model = UNetPP(in_channels=5, out_channels=1)
     model = model.to(device)
-    x = torch.randn(1, 5)
+    x = torch.randn(1, 5, 128, 128)
     x = x.to(device)
     out = model(x)
     print(out.shape)
 
-    summary(model, input_size=(1, 5))
+    summary(model, input_size=(5, 128, 128))
