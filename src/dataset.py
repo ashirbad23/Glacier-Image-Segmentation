@@ -53,12 +53,12 @@ class GlacierDataset(Dataset):
                     patch_label = label_img[y:y + self.patch_size, x:x + self.patch_size]
                     patch_bands = bands_stack[:, y:y + self.patch_size, x:x + self.patch_size]
 
-                    if patch_bands.sum() == 0 and patch_label.sum() == 0:
+                    if patch_bands.sum() == 0:
                         continue  # skip empty patches
 
                     for t_id in self.transform.transform_list:
                         aug_bands, aug_label = self.transform.apply(patch_bands, patch_label, t_id)
-                        if aug_bands.sum() > 0 or aug_label.sum() > 0:
+                        if aug_bands.sum() > 0:
                             samples.append((img_id, x, y, self.patch_size, self.patch_size, t_id))
 
             # --- 2. Add random non-zero patches ---
@@ -72,10 +72,10 @@ class GlacierDataset(Dataset):
 
                 patch_label = label_img[y:y + self.patch_size, x:x + self.patch_size]
                 patch_bands = bands_stack[:, y:y + self.patch_size, x:x + self.patch_size]
-                if patch_bands.sum() > 0 and patch_label.sum() > 0:
+                if patch_bands.sum() > 0:
                     for t_id in self.transform.transform_list:
                         aug_bands, aug_label = self.transform.apply(patch_bands, patch_label, t_id)
-                        if aug_bands.sum() > 0 or aug_label.sum() > 0:
+                        if aug_bands.sum() > 0:
                             samples.append((img_id, x, y, self.patch_size, self.patch_size, t_id))
 
         return samples
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     band_folders = os.listdir(base_path)[:-1]
 
     # Toggle normalize on/off here
-    dataset = GlacierDataset(base_path=base_path, patch_size=128)
+    dataset = GlacierDataset(base_path=base_path, patch_size=256)
 
     # Test one sample
     bands, label = dataset[155]
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     # zero_count = 0
     #
     # for bands, labels in dataset:
-    #     if bands.sum() == 0 and labels.sum() == 0:
+    #     if bands.sum() > 0 and labels.sum() == 0:
     #         zero_count += 1
     #
     # print(zero_count)
