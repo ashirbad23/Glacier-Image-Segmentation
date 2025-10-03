@@ -236,11 +236,11 @@ def main():
         mcc = mcc_score(ref_img, mask)
         mcc_total += mcc
         ax[0].imshow(ref_img, cmap='gray')
-        ax[0].set_title("Original B1")
+        ax[0].set_title(f"Original {tid}")
         ax[0].axis("off")
 
         ax[1].imshow(mask, cmap='gray')
-        ax[1].set_title("Predicted Mask")
+        ax[1].set_title(f"Predicted Mask {tid}")
         ax[1].axis("off")
 
         ax[1].text(
@@ -252,6 +252,7 @@ def main():
         )
 
         plt.tight_layout()
+        plt.savefig(f"Evaluation/{tid}.png")
         plt.show()
 
     print(f"Results saved to: {output_dir}")
