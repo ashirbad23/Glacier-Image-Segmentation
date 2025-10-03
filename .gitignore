@@ -13,4 +13,7 @@ __pycache__/
 src/monitor.py
 src/visuals.py
 src/test.py
+assets.py
 /solution/results
+/solution/Evaluation
+/assets
