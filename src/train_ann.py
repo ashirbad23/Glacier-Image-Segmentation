@@ -24,10 +24,10 @@ torch.cuda.manual_seed_all(seed)
 np.random.seed(seed)
 
 # Hyperparameters
-EPOCHS = 50
+EPOCHS = 1000
 BATCH_SIZE = 1024
 LR = 1e-3
-KFOLDS = 5
+KFOLDS = 10
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BASE_PATH = "../data/Train"
 
